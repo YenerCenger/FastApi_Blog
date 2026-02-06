@@ -1,0 +1,124 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="mb-4">
+    <form method="GET" action="{{ url_for('search') }}" class="d-flex gap-2">
+        <input type="text" name="text" class="form-control" placeholder="Başlık veya içerikte ara..."
+            value="{{ search_query if search_query else '' }}">
+        <button type="submit" class="btn btn-primary">Ara</button>
+    </form>
+</div>
+
+{% if search_query %}
+<div class="alert alert-info mb-3">
+    <strong>"{{ search_query }}"</strong> için <strong>{{ posts|length }}</strong> sonuç bulundu.
+</div>
+{% endif %}
+
+{% if posts %}
+{% for post in posts %}
+<article class="content-section py-3 px-4 mb-4">
+    <div class="d-flex align-items-start gap-4">
+        {% if post.author %}
+        <img class="rounded-circle article-img flex-shrink-0" src="{{ post.author.image_path }}"
+            alt="{{ post.author.username }}'s profile picture" width="64" height="64" loading="lazy">
+        {% else %}
+        <img class="rounded-circle article-img flex-shrink-0" src="/static/profile_pics/default.jpg"
+            alt="Unknown user" width="64" height="64" loading="lazy">
+        {% endif %}
+        <div class="flex-grow-1">
+            <div class="article-metadata mb-2">
+                {% if post.author %}
+                <a class="me-2" href="{{ url_for('user_posts', user_id=post.author.id) }}">{{ post.author.username
+                    }}</a>
+                {% else %}
+                <span class="me-2 text-muted">Unknown User</span>
+                {% endif %}
+                <small class="text-body-secondary">{{ post.date_posted.strftime("%B %d, %Y") }}</small>
+                <small class="text-body-secondary ms-2 d-inline-flex align-items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                    </svg>
+                    <span>{{ post.view }}</span>
+                </small>
+            </div>
+            <h2>
+                <a class="article-title" href="{{ url_for('post_page', post_id=post.id) }}">{{ post.title }}</a>
+            </h2>
+            <p class="article-content">{{ post.content }}</p>
+        </div>
+    </div>
+    </article>
+{% endfor %}
+
+{# Pagination #}
+{% if total_pages > 1 and not search_query %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {# Önceki sayfa butonu #}
+        <li class="page-item {% if not has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{% if has_prev %}/?page={{ page - 1 }}{% else %}#{% endif %}" {% if not has_prev %}tabindex="-1" aria-disabled="true"{% endif %}>
+                Önceki
+            </a>
+        </li>
+        
+        {# Sayfa numaraları #}
+        {% set start_page = 1 if page - 1 < 1 else page - 1 %}
+        {% set end_page = total_pages if page + 1 > total_pages else page + 1 %}
+        
+        {% if start_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="/?page=1">1</a>
+            </li>
+            {% if start_page > 2 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+        {% endif %}
+        
+        {% for page_num in range(start_page, end_page + 1) %}
+            {% if page_num == page %}
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+            {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="/?page={{ page_num }}">{{ page_num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+            <li class="page-item">
+                <a class="page-link" href="/?page={{ total_pages }}">{{ total_pages }}</a>
+            </li>
+        {% endif %}
+        
+        {# Sonraki sayfa butonu #}
+        <li class="page-item {% if not has_next %}disabled{% endif %}">
+            <a class="page-link" href="{% if has_next %}/?page={{ page + 1 }}{% else %}#{% endif %}" {% if not has_next %}tabindex="-1" aria-disabled="true"{% endif %}>
+                Sonraki
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+{% if search_query %}
+<div class="alert alert-warning">
+    <strong>"{{ search_query }}"</strong> için sonuç bulunamadı.
+</div>
+{% else %}
+<div class="alert alert-secondary">
+    Henüz post bulunmuyor.
+</div>
+{% endif %}
+{% endif %}
+{% endblock content %}
